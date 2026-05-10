@@ -4,7 +4,7 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const express = require('express')
 const dotenv = require('dotenv')
 const cors = require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 dotenv.config()
 
 const uri = process.env.MONGODB_URI;
@@ -33,6 +33,11 @@ async function run() {
     const db = client.db("wanderlust") //creating database
     const destinationCollection = db.collection("destinations") //creating collectionss
 
+    app.get('/destinations', async(req, res) =>{
+      const result = await destinationCollection.find().toArray()
+      res.json(result)
+    });
+    
     app.post('/destination', async(req, res) =>{
         const destinationData = req.body
         console.log(destinationData)
@@ -41,6 +46,15 @@ async function run() {
         res.json(result)
     })
 // End of creating API 
+
+
+// Single Destination API
+    app.get('/destinations/:id', async(req, res) => {
+      const {id} = req.params
+      const result = await destinationCollection.findOne({_id: new ObjectId(id)}) //converting string id to Object id
+      res.json(result)
+    })
+// End of Single Destination API
 
 
     await client.db("admin").command({ ping: 1 });
