@@ -57,6 +57,26 @@ async function run() {
 // End of Single Destination API
 
 
+//Edit modal API
+    app.patch('/destinations/:id', async(req, res) =>{
+      const {id} = req.params
+      const updatedData = req.body
+
+      const result = destinationCollection.updateOne(
+        {_id: new ObjectId(id)}, //Specific element
+        {$set: updatedData}
+      )
+
+      res.json(result)
+    })
+
+//Delete API
+    app.delete('/destinations/"id', async(req, res) =>{
+      const {id} = req.params
+      const result = await destinationCollection.deleteOne({_id: new ObjectId(id)})
+      res.json(result)
+    })
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
