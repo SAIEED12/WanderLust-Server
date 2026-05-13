@@ -31,7 +31,8 @@ async function run() {
 
 // Creating API 
     const db = client.db("wanderlust") //creating database
-    const destinationCollection = db.collection("destinations") //creating collectionss
+    const destinationCollection = db.collection("destinations") //creating collections
+    const bookingCollection = db.collection("bookings") //creating collectionss
 
     app.get('/destinations', async(req, res) =>{
       const result = await destinationCollection.find().toArray()
@@ -70,10 +71,35 @@ async function run() {
       res.json(result)
     })
 
+    
 //Delete API
-    app.delete('/destinations/"id', async(req, res) =>{
+    app.delete('/destinations/:id', async(req, res) =>{
       const {id} = req.params
       const result = await destinationCollection.deleteOne({_id: new ObjectId(id)})
+      res.json(result)
+    })
+
+//My Bookings Page
+
+ app.get('/booking/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const result = await bookingCollection.find({ userId: userId }).toArray(); 
+  res.json(result);
+});
+
+
+//Booking Card Button
+    app.post('/booking', async(req, res) =>{
+      const bookingData = req.body;
+      const result = await bookingCollection.insertOne(bookingData)
+      res.json(result)
+    })
+
+
+//Booking Cancel API
+    app.delete('/booking/:bookingId', async(req, res)=>{
+      const {bookingId} = req.params
+      const result = await bookingCollection.deleteOne({_id: new ObjectId(bookingId)})
       res.json(result)
     })
 
