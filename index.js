@@ -5,6 +5,7 @@ const express = require('express')
 const dotenv = require('dotenv')
 const cors = require('cors')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 dotenv.config()
 
 const uri = process.env.MONGODB_URI;
@@ -24,6 +25,32 @@ const client = new MongoClient(uri, {
 });
 
 
+const JWKS = createRemoteJWKSet(
+  new URL("http://localhost:3000/api/auth/jwks")
+)
+
+const verifyToken = async(req, res, next) =>{
+  const authHeader = req?.headers.authorization
+  if(!authHeader){
+    return res.status(401).json({message: "Unauthorized"})
+  }
+  const token = authHeader.split(" ")[1]
+  if(!token){
+    return res.status(401).json({message: "Unauthorized"})
+  }
+  console.log(token)
+
+  try{
+    const {payload} = await jwtVerify(token, JWKS)
+    console.log(payload)
+    next()
+  }
+  catch{
+    return res.status(403).json({message: "Forbidden"})
+  }
+
+}
+
 
 async function run() {
   try {
@@ -31,8 +58,9 @@ async function run() {
 
 // Creating API 
     const db = client.db("wanderlust") //creating database
-    const destinationCollection = db.collection("destinations") //creating collections
-    const bookingCollection = db.collection("bookings") //creating collectionss
+    const destinationCollection = db.collection("destinations") //creating destination collections
+
+    const bookingCollection = db.collection("bookings") //creating booking collections
 
     app.get('/destinations', async(req, res) =>{
       const result = await destinationCollection.find().toArray()
@@ -50,12 +78,18 @@ async function run() {
 
 
 // Single Destination API
-    app.get('/destinations/:id', async(req, res) => {
-      const {id} = req.params
-      const result = await destinationCollection.findOne({_id: new ObjectId(id)}) //converting string id to Object id
-      res.json(result)
-    })
+app.get("/destinations/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+
+      const result = await destinationCollection.findOne({
+        _id: new ObjectId(id),
+      });
+
+      res.json(result);
+    });
 // End of Single Destination API
+
+
 
 
 //Edit modal API
@@ -88,8 +122,8 @@ async function run() {
 });
 
 
-//Booking Card Button
-    app.post('/booking', async(req, res) =>{
+//Booking API/Booking Card Button
+    app.post('/booking', verifyToken, async(req, res) =>{
       const bookingData = req.body;
       const result = await bookingCollection.insertOne(bookingData)
       res.json(result)
@@ -97,7 +131,7 @@ async function run() {
 
 
 //Booking Cancel API
-    app.delete('/booking/:bookingId', async(req, res)=>{
+    app.delete('/booking/:bookingId', verifyToken, async(req, res)=>{
       const {bookingId} = req.params
       const result = await bookingCollection.deleteOne({_id: new ObjectId(bookingId)})
       res.json(result)
